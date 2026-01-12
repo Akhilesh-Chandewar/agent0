@@ -13,6 +13,6 @@ export async function testAgent(content?: string) {
 
     return {
         success: true,
-        message: "Agent triggered successfully" + res.ids[0],
+        message: `Agent triggered successfully ${res}`,
     };
 }
