@@ -12,6 +12,7 @@ import z from "zod";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Form, FormField } from "@/components/ui/form";
+import { testAgent } from "../actions";
 
 const formSchema = z.object({
   content: z
@@ -41,7 +42,7 @@ function ProjectForm() {
     try {
       setIsPending(true);
       console.log("Creating project:", values.content);
-      toast.success("Project created successfully");
+      toast.success("Project created successfully" + values.content);
       form.reset();
     } catch (error: any) {
       toast.error(error?.message || "Failed to create project");
@@ -55,6 +56,25 @@ function ProjectForm() {
 
   return (
     <div className="space-y-6">
+      <Button
+        variant="outline"
+        disabled={isPending}
+        onClick={async () => {
+          try {
+            setIsPending(true);
+
+            const res = await testAgent(form.watch("content"));
+
+            toast.success(res.message);
+          } catch (err: any) {
+            toast.error(err?.message || "Agent failed");
+          } finally {
+            setIsPending(false);
+          }
+        }}
+      >
+        {isPending ? "Running agent..." : "Test Agent"}
+      </Button>
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
