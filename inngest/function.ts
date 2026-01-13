@@ -391,10 +391,60 @@ export const codeAgentFunction = inngest.createFunction(
             const sandboxUrl = await step.run("get-sandbox-url", async () => {
                 try {
                     const sandbox = await Sandbox.connect(sandboxId);
-                    const host = sandbox.getHost(8000);
-                    return `http://${host}`;
-                } catch (error) {
-                    console.log("Sandbox URL not available");
+                    const files = result.state.data.files || {};
+                    
+                    // Check if we have any files to serve
+                    if (Object.keys(files).length === 0) {
+                        console.log("No files to serve");
+                        return null;
+                    }
+
+                    // Try to start a simple HTTP server to serve the workspace files
+                    // Check if server is already running first
+                    try {
+                        // Check if port 8000 is already in use
+                        const portCheck = await sandbox.commands.run(
+                            "lsof -ti:8000 || echo 'not_running'"
+                        );
+                        
+                        if (portCheck?.toString().includes('not_running')) {
+                            // Start Python HTTP server using nohup to run in background
+                            await sandbox.commands.run(
+                                "cd /workspace && nohup python3 -m http.server 8000 > /tmp/http_server.log 2>&1 &"
+                            );
+                            // Wait for server to start
+                            await new Promise(resolve => setTimeout(resolve, 3000));
+                            
+                            // Verify server started successfully
+                            const verify = await sandbox.commands.run(
+                                "curl -s -o /dev/null -w '%{http_code}' http://localhost:8000 || echo '000'"
+                            );
+                            if (!verify?.toString().includes('200') && !verify?.toString().includes('403')) {
+                                console.log("Server verification failed, but continuing anyway");
+                            }
+                        } else {
+                            console.log("Server already running on port 8000");
+                        }
+                    } catch (serverError) {
+                        console.log("Could not start HTTP server:", serverError);
+                        // Continue anyway - server might already be running or agent might have started it
+                    }
+
+                    // Try to get the host URL - this will work if a server is running on port 8000
+                    try {
+                        const host = sandbox.getHost(8000);
+                        if (host && host.trim()) {
+                            return `http://${host}`;
+                        }
+                    } catch (hostError: any) {
+                        console.log("Could not get host URL:", hostError?.message || hostError);
+                        // If getHost fails, the server might not be running on port 8000
+                        // This is okay - we'll just not create a fragment with a URL
+                    }
+
+                    return null;
+                } catch (error: any) {
+                    console.log("Sandbox URL not available:", error?.message || error);
                     return null;
                 }
             });
