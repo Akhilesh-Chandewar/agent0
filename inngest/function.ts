@@ -35,12 +35,20 @@ const RESPONSE_GENERATOR_PROMPT = `Generate a friendly, informative response to 
 Explain what was built and how they can use it.
 Keep it concise (2-3 sentences) and helpful.`;
 
+const responseCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export const codeAgentFunction = inngest.createFunction(
     { id: "code-agent" },
     { event: "code-agent/run" },
     async ({ event, step }) => {
         try {
-            // step - 1
+            const cacheKey = JSON.stringify(event.data.value);
+            const cached = responseCache.get(cacheKey);
+            if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+                console.log("Returning cached response");
+                return cached.data;
+            }
             const sandboxId = await step.run("create-sandbox", async () => {
                 const sandbox = await Sandbox.create();
                 return sandbox.sandboxId;
@@ -59,7 +67,9 @@ export const codeAgentFunction = inngest.createFunction(
                             command: z.string().describe("The shell command to execute"),
                         }),
                         handler: async ({ command }, { step }) => {
-                            return await step?.run("terminal", async () => {
+                            await step?.sleep("terminal-rate-limit", 300);
+
+                            return await step?.run(`terminal-${command.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '-')}`, async () => {
                                 const buffers = { stdout: "", stderr: "" };
 
                                 try {
@@ -70,8 +80,7 @@ export const codeAgentFunction = inngest.createFunction(
                                         },
                                         onStderr: (data) => {
                                             buffers.stderr += data;
-                                        },
-                                        // timeout: 60000, // 60 second timeout
+                                        }, 
                                     });
 
                                     return result.stdout || buffers.stdout;
@@ -97,6 +106,10 @@ export const codeAgentFunction = inngest.createFunction(
                             ),
                         }),
                         handler: async ({ files }, { step, network }) => {
+                            if (files.length > 2) {
+                                await step?.sleep("batch-rate-limit", 500);
+                            }
+
                             const newFiles = await step?.run(
                                 "createOrUpdateFiles",
                                 async () => {
@@ -137,6 +150,8 @@ export const codeAgentFunction = inngest.createFunction(
                             files: z.array(z.string().describe("File paths to read")),
                         }),
                         handler: async ({ files }, { step }) => {
+                            await step?.sleep("read-rate-limit", 200);
+
                             return await step?.run("readFiles", async () => {
                                 try {
                                     const sandbox = await Sandbox.connect(sandboxId);
@@ -170,13 +185,13 @@ export const codeAgentFunction = inngest.createFunction(
                             packages: z.array(z.string().describe("Package names to install")),
                         }),
                         handler: async ({ packages }, { step }) => {
+                            await step?.sleep("install-rate-limit", 500);
+
                             return await step?.run("installPackages", async () => {
                                 try {
                                     const sandbox = await Sandbox.connect(sandboxId);
                                     const command = `pip install ${packages.join(" ")}`;
-                                    const result = await sandbox.commands.run(command, {
-                                        // timeout: 120000, // 2 minutes for package installation
-                                    });
+                                    const result = await sandbox.commands.run(command);
 
                                     return `Successfully installed: ${packages.join(", ")}`;
                                 } catch (error) {
@@ -209,19 +224,33 @@ export const codeAgentFunction = inngest.createFunction(
             const network = createNetwork({
                 name: "agent-builder-network",
                 agents: [agentBuilder],
-                maxIter: 15,
-                // defaultState: state,
+                maxIter: 8, 
                 router: async ({ network }) => {
                     const summary = network.state.data.summary;
-
-                    if (summary) {
+                    const files = network.state.data.files;
+                    if (summary && files && Object.keys(files).length > 0) {
+                        console.log("Early exit: Summary and files complete");
                         return;
                     }
+
+                    if (summary) {
+                        console.log("Exit: Summary generated");
+                        return;
+                    }
+
                     return agentBuilder;
                 },
             });
 
             const result = await network.run(event.data.value);
+
+            if (!result.state.data.summary) {
+                return {
+                    title: "Error",
+                    message: "Failed to generate agent. Please try again.",
+                    success: false,
+                };
+            }
 
             const titleGenerator = createAgent({
                 name: "title-generator",
@@ -277,8 +306,10 @@ export const codeAgentFunction = inngest.createFunction(
                 return {
                     title: "Error",
                     message: generateResponse(),
+                    success: false,
                 };
             }
+
             const sandboxUrl = await step.run("get-sandbox-url", async () => {
                 try {
                     const sandbox = await Sandbox.connect(sandboxId);
@@ -289,7 +320,8 @@ export const codeAgentFunction = inngest.createFunction(
                     return null;
                 }
             });
-            return {
+
+            const finalResult = {
                 url: sandboxUrl,
                 title: generateTitle(),
                 files: result.state.data.files,
@@ -297,8 +329,25 @@ export const codeAgentFunction = inngest.createFunction(
                 sandboxId: sandboxId,
                 success: !isError,
             };
+
+            responseCache.set(cacheKey, {
+                data: finalResult,
+                timestamp: Date.now()
+            });
+
+            if (responseCache.size > 100) {
+                const firstKey = responseCache.keys().next().value;
+                responseCache.delete(firstKey);
+            }
+
+            return finalResult;
         } catch (error) {
             console.error(error);
+            return {
+                title: "Error",
+                message: "An unexpected error occurred. Please try again.",
+                success: false,
+            };
         }
     }
 );
