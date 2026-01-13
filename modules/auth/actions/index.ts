@@ -75,7 +75,7 @@ export async function getCurrentUser() {
         }
         const dbUser = await User.findOne({
             clerkId: clerkUser.id,
-        });
+        }).select("_id email name image").exec();
 
         if (!dbUser) {
             return {

@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
+import { QueryProvider } from "@/components/QueryProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,8 +55,10 @@ export default function RootLayout({ children, }: Readonly<{ children: React.Rea
             enableSystem
             disableTransitionOnChange
           >
-            {children}
-            <Toaster />
+            <QueryProvider>
+              {children}
+              <Toaster />
+            </QueryProvider>
           </ThemeProvider>
         </body>
       </html>
