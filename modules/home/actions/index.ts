@@ -2,12 +2,11 @@
 
 import { inngest } from "@/inngest/client";
 
-export async function testAgent(content?: string) {
+export async function testAgent(content = "code a hello world agent") {
     const res = await inngest.send({
-        name: "agent/hello",
+        name: "code-agent/run",
         data: {
-            email: "akhil@example.com",
-            prompt: content,
+            content: content || "",
         },
     });
 
