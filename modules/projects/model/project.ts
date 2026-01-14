@@ -32,7 +32,6 @@ const ProjectSchema = new Schema<IProject>(
         timestamps: true,
     }
 );
-
 const Project: Model<IProject> =
     mongoose.models.Project || mongoose.model<IProject>("Project", ProjectSchema);
 
