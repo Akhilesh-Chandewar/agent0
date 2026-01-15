@@ -79,7 +79,7 @@ const AssistantMessage = ({
             )}
         >
             <div className="flex items-center gap-2 pl-2 mb-2">
-                <span className="text-sm font-medium">V0</span>
+                <span className="text-sm font-medium">Agent0</span>
                 <span className="text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
                     {format(new Date(createdAt), "HH:mm 'on' MMM dd, yyyy")}
                 </span>

@@ -10,6 +10,11 @@ import { generateSlug } from "random-word-slugs";
 import Project from "@/modules/projects/model/project";
 import "@/modules/fragments/model/fragment";
 
+function serializeDocument(doc: any): any {
+    if (!doc) return doc;
+    return JSON.parse(JSON.stringify(doc));
+}
+
 export async function createMessage(value: string, projectId: string) {
     try {
         await connectToDatabase();
@@ -47,7 +52,7 @@ export async function createMessage(value: string, projectId: string) {
         //     },
         // });
 
-        return message;
+        return serializeDocument(message);
     } catch (error: any) {
         console.error("Failed to create message:", error);
         throw error;
@@ -72,7 +77,7 @@ export async function getMessages(projectId: string) {
             .lean()
             .exec();
 
-        return messages;
+        return messages.map(serializeDocument);
     } catch (error) {
         console.error("getMessages error:", error);
         throw error;
@@ -91,7 +96,7 @@ export async function deleteMessage(messageId: string) {
 
         const message = await Message.findByIdAndDelete(messageId);
 
-        return message;
+        return serializeDocument(message);
     } catch (error) {
         console.error("deleteMessage error:", error);
         throw error;
