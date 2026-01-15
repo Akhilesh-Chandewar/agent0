@@ -44,7 +44,6 @@ export async function createProject(value: string) {
         project.messages.push(userMessage._id);
         await project.save();
 
-        // Add project to user's projects array
         await User.findByIdAndUpdate(
             currentUser.user._id,
             { $push: { projects: project._id } },

@@ -1,5 +1,5 @@
 import { getProjectById } from "@/modules/projects/action";
-import ProjecrView from "@/modules/projects/component/ProjecrView";
+import ProjecrView from "@/modules/projects/component/ProjectView";
 
 interface Props {
     params: Promise<{ projectid: string }>
