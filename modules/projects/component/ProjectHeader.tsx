@@ -34,7 +34,8 @@ function ProjectHeader({ projectId }: { projectId: string }) {
 
   // Prevent hydration mismatch with next-themes
   useEffect(() => {
-    setMounted(true);
+    // Using a microtask to avoid setState during render
+    Promise.resolve().then(() => setMounted(true));
   }, []);
 
   if (!mounted) return null;

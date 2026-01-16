@@ -1,4 +1,3 @@
-import { getProjectById } from "@/modules/projects/action";
 import ProjecrView from "@/modules/projects/component/ProjectView";
 
 interface Props {

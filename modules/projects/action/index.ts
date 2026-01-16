@@ -10,7 +10,7 @@ import User from "@/modules/auth/model/user";
 import { generateSlug } from "random-word-slugs";
 
 // Helper function to serialize Mongoose documents/ObjectIds to plain objects
-function serializeDocument(doc: any): any {
+function serializeDocument<T>(doc: T): T {
     if (!doc) return doc;
     return JSON.parse(JSON.stringify(doc));
 }

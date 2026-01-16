@@ -3,7 +3,7 @@ import { gemini, createAgent, createTool, createNetwork } from "@inngest/agent-k
 import Sandbox from "@e2b/code-interpreter";
 import { z } from "zod";
 import mongoose from "mongoose";
-import Message, { MessageTypeEnum } from "@/modules/messages/model/messages";
+import Message from "@/modules/messages/model/messages";
 import Project from "@/modules/projects/model/project";
 import Fragment from "@/modules/fragments/model/fragment";
 import connectToDatabase from "@/lib/databaseConnection";
@@ -38,7 +38,7 @@ const responseCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000;
 
 // Helper function to check if error is a quota/rate limit error
-function isQuotaError(error: any): boolean {
+function isQuotaError(error: unknown): boolean {
     if (!error) return false;
     const errorStr = JSON.stringify(error);
     return (
@@ -51,10 +51,11 @@ function isQuotaError(error: any): boolean {
 }
 
 // Helper function to extract retry delay from error
-function getRetryDelay(error: any): number {
+function getRetryDelay(error: unknown): number {
     try {
-        if (error?.error?.details) {
-            for (const detail of error.error.details) {
+        const err = error as { error?: { details?: Array<{ "@type"?: string; retryDelay?: string }> } };
+        if (err?.error?.details) {
+            for (const detail of err.error.details) {
                 if (detail["@type"] === "type.googleapis.com/google.rpc.RetryInfo" && detail.retryDelay) {
                     // Parse delay like "42s" or "42.322503362s"
                     const delayStr = detail.retryDelay.replace("s", "");
@@ -72,16 +73,16 @@ function getRetryDelay(error: any): number {
 // Helper function to retry with exponential backoff
 async function retryWithBackoff<T>(
     fn: () => Promise<T>,
-    step: any,
+    step: { sleep: (key: string, delay: number) => Promise<void> } | undefined,
     maxRetries: number = 3,
     baseDelay: number = 1000
 ): Promise<T> {
-    let lastError: any;
+    let lastError: unknown;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
             return await fn();
-        } catch (error: any) {
+        } catch (error: unknown) {
             lastError = error;
 
             if (isQuotaError(error)) {
@@ -258,7 +259,7 @@ export const codeAgentFunction = inngest.createFunction(
                                 try {
                                     const sandbox = await Sandbox.connect(sandboxId);
                                     const command = `pip install ${packages.join(" ")}`;
-                                    const result = await sandbox.commands.run(command);
+                                    await sandbox.commands.run(command);
 
                                     return `Successfully installed: ${packages.join(", ")}`;
                                 } catch (error) {
@@ -436,15 +437,17 @@ export const codeAgentFunction = inngest.createFunction(
                         if (host && host.trim()) {
                             return `http://${host}`;
                         }
-                    } catch (hostError: any) {
-                        console.log("Could not get host URL:", hostError?.message || hostError);
+                    } catch (hostError: unknown) {
+                        const errMsg = hostError instanceof Error ? hostError.message : String(hostError);
+                        console.log("Could not get host URL:", errMsg);
                         // If getHost fails, the server might not be running on port 8000
                         // This is okay - we'll just not create a fragment with a URL
                     }
 
                     return null;
-                } catch (error: any) {
-                    console.log("Sandbox URL not available:", error?.message || error);
+                } catch (error: unknown) {
+                    const errMsg = error instanceof Error ? error.message : String(error);
+                    console.log("Sandbox URL not available:", errMsg);
                     return null;
                 }
             });
@@ -519,7 +522,7 @@ export const codeAgentFunction = inngest.createFunction(
             }
 
             return finalResult;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Inngest function error:", error);
 
             // Determine error message based on error type

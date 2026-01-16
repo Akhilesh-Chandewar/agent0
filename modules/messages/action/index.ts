@@ -1,16 +1,12 @@
 "use server";
-
-import { inngest } from "@/inngest/client";
 import connectToDatabase from "@/lib/databaseConnection";
 import { getCurrentUser } from "@/modules/auth/actions";
-import { MessageRoleEnum, MessageTypeEnum } from "@/modules/messages/model/messages";
+import { MessageRoleEnum } from "@/modules/messages/model/messages";
 import Message from "@/modules/messages/model/messages";
-import User from "@/modules/auth/model/user";
-import { generateSlug } from "random-word-slugs";
 import Project from "@/modules/projects/model/project";
 import "@/modules/fragments/model/fragment";
 
-function serializeDocument(doc: any): any {
+function serializeDocument<T>(doc: T): T {
     if (!doc) return doc;
     return JSON.parse(JSON.stringify(doc));
 }
@@ -37,7 +33,7 @@ export async function createMessage(value: string, projectId: string) {
         const message = await Message.create({
             content: value,
             role: MessageRoleEnum[0], // USER
-            type: MessageTypeEnum[0], // RESULT
+            type: "RESULT",
             projectId: project._id,
         });
 
@@ -53,7 +49,7 @@ export async function createMessage(value: string, projectId: string) {
         // });
 
         return serializeDocument(message);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Failed to create message:", error);
         throw error;
     }

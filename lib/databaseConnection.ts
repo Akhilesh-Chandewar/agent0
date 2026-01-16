@@ -1,14 +1,19 @@
 import mongoose from "mongoose";
 
+interface MongooseCache {
+    conn: typeof mongoose | null;
+    promise: Promise<typeof mongoose> | null;
+}
+
 declare global {
-    var mongoose: any;
+    var mongoose: MongooseCache | undefined;
 }
 
-let cached = global.mongoose;
-
-if (!cached) {
-    cached = global.mongoose = { conn: null, promise: null };
+if (!global.mongoose) {
+    global.mongoose = { conn: null, promise: null };
 }
+
+const cached = global.mongoose;
 
 mongoose.connection.on('connected', () => {
     console.log('Mongoose connected to MongoDB');

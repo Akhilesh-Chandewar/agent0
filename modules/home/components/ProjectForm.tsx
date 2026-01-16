@@ -33,10 +33,6 @@ function ProjectForm() {
     mode: "onChange",
   });
 
-  const handleTemplate = (prompt: string) => {
-    form.setValue("content", prompt, { shouldValidate: true });
-  };
-
   const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
     if (isPending || isCreating) return;
 
@@ -52,8 +48,9 @@ function ProjectForm() {
       } else {
         toast.error(result.message || "Failed to create project");
       }
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to create project");
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : "Failed to create project";
+      toast.error(errorMsg);
     } finally {
       setIsPending(false);
     }

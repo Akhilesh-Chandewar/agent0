@@ -53,7 +53,7 @@ const ProjectList = () => {
       </h2>
       <div className="hidden lg:grid grid-cols-3 gap-4 max-w-6xl mx-auto">
         {projects?.map((project) => (
-          <Link href={`/projects/${project._id}`} key={project._id}>
+          <Link href={`/projects/${project._id}`} key={String(project._id)}>
             <Card className="group hover:shadow-xl transition-all duration-300 border-zinc-800/50 hover:border-emerald-500/50 cursor-pointer bg-zinc-900/30 backdrop-blur-sm overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between mb-3">
@@ -86,7 +86,7 @@ const ProjectList = () => {
         >
           <CarouselContent className="-ml-4">
             {projects?.map((project) => (
-              <CarouselItem key={project._id} className="pl-4 md:basis-1/2">
+              <CarouselItem key={String(project._id)} className="pl-4 md:basis-1/2">
                 <Link href={`/projects/${project._id}`}>
                   <Card className="group hover:shadow-xl transition-all duration-300 border-zinc-800/50 hover:border-emerald-500/50 cursor-pointer bg-zinc-900/30 backdrop-blur-sm">
                     <CardHeader className="pb-3">

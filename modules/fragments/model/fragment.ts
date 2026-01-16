@@ -4,7 +4,7 @@ export interface IFragment extends Document {
     messageId: mongoose.Types.ObjectId;
     sandboxUrl: string;
     title: string;
-    files: Record<string, any>;
+    files: Record<string, string>;
     createdAt: Date;
     updatedAt: Date;
 }
