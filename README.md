@@ -373,6 +373,7 @@ npm run lint
 ### Build fails: "Route / couldn't be rendered statically"
 
 **Symptom:**
+
 ```
 Error: Route / couldn't be rendered statically because it used `headers()`.
 ```
@@ -380,6 +381,7 @@ Error: Route / couldn't be rendered statically because it used `headers()`.
 **Root cause:** Dynamic APIs (`headers()`, `cookies()`, `currentUser()`) are called during server rendering.
 
 **Fix:** Mark the route as dynamic
+
 ```ts
 // app/(root)/layout.tsx
 export const dynamic = "force-dynamic";
@@ -388,6 +390,7 @@ export const dynamic = "force-dynamic";
 ### Mongoose connection warnings
 
 **Symptom:**
+
 ```
 Mongoose connected to MongoDB
 Mongoose connected to MongoDB
@@ -396,11 +399,12 @@ Mongoose connected to MongoDB
 **Why:** Multiple connection listeners log during build.
 
 **Fix:** Gate logging behind environment check
+
 ```ts
 // lib/databaseConnection.ts
-if (process.env.NODE_ENV !== 'production') {
-  mongoose.connection.on('connected', () => {
-    console.log('Mongoose connected');
+if (process.env.NODE_ENV !== "production") {
+  mongoose.connection.on("connected", () => {
+    console.log("Mongoose connected");
   });
 }
 ```
@@ -408,6 +412,7 @@ if (process.env.NODE_ENV !== 'production') {
 ### Inngest rate limit (quota exceeded)
 
 **Symptom:**
+
 ```
 RESOURCE_EXHAUSTED: 429 Quota exceeded
 ```
@@ -415,6 +420,7 @@ RESOURCE_EXHAUSTED: 429 Quota exceeded
 **Why:** Gemini API has rate limits (free tier: 20 req/day).
 
 **Fix:** Implemented automatically via `retryWithBackoff()`
+
 - Retries up to 5 times with exponential backoff
 - Parses `Retry-After` header from Google
 - Caches results for 5 minutes to avoid duplicate requests
@@ -422,6 +428,7 @@ RESOURCE_EXHAUSTED: 429 Quota exceeded
 ### E2B sandbox timeout
 
 **Symptom:**
+
 ```
 Error: Sandbox connection timeout
 ```
@@ -429,6 +436,7 @@ Error: Sandbox connection timeout
 **Why:** Sandbox takes time to spin up or network is slow.
 
 **Fix:**
+
 1. Check E2B API key is valid
 2. Increase timeouts in E2B client config
 3. Consider pre-warming sandboxes during off-peak hours
@@ -438,9 +446,12 @@ Error: Sandbox connection timeout
 **Common cause:** FileNode children is Record instead of array after transformation
 
 **Fixed in:** `modules/fragments/component/FileExplorer.tsx`
+
 ```ts
 // Safe rendering handles both types:
-{Array.isArray(node.children) ? node.children : Object.values(node.children)}
+{
+  Array.isArray(node.children) ? node.children : Object.values(node.children);
+}
 ```
 
 ---
@@ -495,6 +506,7 @@ npm run lint --fix
 
 1. Open `inngest/function.ts`
 2. Define tool:
+
 ```ts
 createTool({
   name: "customTool",
@@ -508,7 +520,7 @@ createTool({
       return "result";
     });
   },
-})
+});
 ```
 
 3. Add to `tools` array
