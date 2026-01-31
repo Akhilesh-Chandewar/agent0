@@ -9,7 +9,8 @@ interface FileNode {
     name: string;
     path: string;
     type: "file" | "folder";
-    children?: Record<string, FileNode>;
+    // During construction this is a Record, after conversion it's an array
+    children?: Record<string, FileNode> | FileNode[];
 }
 
 interface FileExplorerProps {
@@ -56,7 +57,11 @@ function buildFileTree(files: Record<string, string>): FileNode[] {
             })
             .map((node) => ({
                 ...node,
-                children: node.children ? convertToArray(node.children) : undefined,
+                children: node.children
+                    ? Array.isArray(node.children)
+                        ? node.children
+                        : convertToArray(node.children)
+                    : undefined,
             }));
     };
 
@@ -87,7 +92,7 @@ function FileTreeNode({
                 )}
                 style={{ paddingLeft: `${level * 12 + 8}px` }}
             >
-                <FileIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="truncate">{node.name}</span>
             </button>
         );
@@ -101,20 +106,20 @@ function FileTreeNode({
                 style={{ paddingLeft: `${level * 12 + 8}px` }}
             >
                 {isOpen ? (
-                    <ChevronDownIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <ChevronDownIcon className="h-4 w-4 text-muted-foreground shrink-0" />
                 ) : (
-                    <ChevronRightIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <ChevronRightIcon className="h-4 w-4 text-muted-foreground shrink-0" />
                 )}
                 {isOpen ? (
-                    <FolderOpenIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <FolderOpenIcon className="h-4 w-4 text-muted-foreground shrink-0" />
                 ) : (
-                    <FolderIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <FolderIcon className="h-4 w-4 text-muted-foreground shrink-0" />
                 )}
                 <span className="truncate">{node.name}</span>
             </button>
             {isOpen && node.children && (
                 <div>
-                    {node.children.map((child) => (
+                    {(Array.isArray(node.children) ? node.children : Object.values(node.children)).map((child) => (
                         <FileTreeNode
                             key={child.path}
                             node={child}

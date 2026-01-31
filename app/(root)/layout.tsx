@@ -1,8 +1,10 @@
 import DottedBackground from "@/components/DottedBackground";
 import { onBoardUser } from "@/modules/auth/actions";
-import {Navbar} from "@/modules/home/components/Navbar";
+import { Navbar } from "@/modules/home/components/Navbar";
 
-export default async function AppLayout({children,}: {children: React.ReactNode;}) {
+export const dynamic = "force-dynamic";
+
+export default async function AppLayout({ children, }: { children: React.ReactNode; }) {
     await onBoardUser();
     return (
         <main className="relative flex flex-col min-h-screen overflow-x-hidden">
